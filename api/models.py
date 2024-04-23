@@ -5,6 +5,8 @@ from django.dispatch import receiver
 
 
 
+
+
 class CustomUser(AbstractUser):
   phone = models.CharField(max_length=100, unique=True, db_index=True)
   email = models.EmailField(max_length=254, unique=True, db_index=True, null=True, blank=True)
@@ -36,7 +38,11 @@ class ManagerProfile(models.Model):
   
   def save(self, *args, **kwargs):
     super().save(*args, **kwargs)
-
+    try:
+      settings = Setting.objects.get(manager=self)
+    except:
+      settings = Setting.objects.create(manager=self).save()
+    super().save()
 
 class StaffProfile(models.Model):
   user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
@@ -350,7 +356,7 @@ class AcademySubscribePlan(models.Model):
   price_per_week = models.IntegerField(null=True, blank=True, default=0)
   price_per_month = models.IntegerField(null=True, blank=True, default=0)
   price_per_year = models.IntegerField(null=True, blank=True, default=0)
-  description = models.TextField(null=True, blank=True)
+  description = models.TextField(null=True, blank=True, max_length=255)
   created_at = models.DateTimeField(auto_now_add=True)
   updated_at = models.DateTimeField(auto_now=True)
 
@@ -391,7 +397,7 @@ class Invoice(models.Model):
 
   amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)
 
-  description = models.TextField(null=True, blank=True)
+  description = models.TextField(null=True, blank=True, max_length=255)
 
   created_at = models.DateTimeField(auto_now_add=True)
   updated_at = models.DateTimeField(auto_now=True)

@@ -189,7 +189,7 @@ def user_detail(request):
   try:
     user = models.CustomUser.objects.get(pk=request.user.pk)
   except models.CustomUser.DoesNotExist:
-    return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    return Response({"error": "User does not exist"})
 
   if request.method == 'GET':
     serializer = serializers.UserSerializer(user)
@@ -200,11 +200,11 @@ def user_detail(request):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors)
   
   if request.method == 'DELETE':
     user.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    return Response({"":""})
 
 
 
@@ -227,6 +227,8 @@ def check_profile(request):
     user_profile = models.UserProfile.objects.get(user=request.user)
     serializer = serializers.UserProfileSerializer(user_profile)
     return Response({"user": serializer.data})
+  
+  return Response({"no_user":True})
 
 
 
