@@ -129,6 +129,11 @@ class AcademySerializer(serializers.ModelSerializer):
     model = models.Academy
     fields = '__all__'
 
+class ChampionshipSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.Championship
+    fields = '__all__'
+
 
 class AcademyTimeSerializer(serializers.ModelSerializer):
   class Meta:

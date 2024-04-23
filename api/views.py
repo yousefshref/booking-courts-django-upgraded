@@ -794,7 +794,8 @@ def books_list(request):
     data = request.data.copy()
     serializer = serializers.BookSerializer(data=data)
     if serializer.is_valid():
-      serializer.save()
+      book = serializer.save()
+      send_whatsapp_message_function(data['phone'], f"لقد تم حجز الملعب {book.name} في تاريخ {book.date} الساعة {book.start_time} - {book.end_time}, يرجي الالتزام بالقوانين")
       return Response(serializer.data)
     return Response(serializer.errors)
 
@@ -846,7 +847,6 @@ def book_detail(request, pk):
   if request.method == 'PUT':
     serializer = serializers.BookSerializer(book, data=request.data, partial=True)
     if serializer.is_valid():
-      send_whatsapp_message_function(book.phone, f"لقد تم حجز الملعب {book.name} في تاريخ {book.date} الساعة {book.start_time} - {book.end_time}, يرجي الالتزام بالقوانين")
       serializer.save()
       return Response(serializer.data)
     return Response(serializer.errors)
@@ -1347,6 +1347,57 @@ def white_list_list(request):
       serializer.save()
       return Response(serializer.data)
     return Response(serializer.errors)
+
+
+
+
+@api_view(['GET', 'POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def champion_list(request):
+  if request.method == 'GET':
+    championships = models.Championship.objects.none()
+
+    if is_manager(request):
+      championships = models.Championship.objects.filter(invoice__manager=is_manager(request))
+
+    if is_staff(request):
+      championships = models.Championship.objects.filter(invoice__manager=is_staff(request).manager)
+    
+    serializer = serializers.ChampionshipSerializer(championships, many=True)
+    return Response(serializer.data)
+  
+  if request.method == 'POST':
+    serializer = serializers.ChampionshipSerializer(data=request.data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)  
+    return Response(serializer.errors)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def champion_detail(request, pk):
+  try:
+    championship = models.Championship.objects.get(pk=pk)
+  except models.Championship.DoesNotExist:
+    return Response({"error": "Championship does not exist"})
+
+  if request.method == 'GET':
+    serializer = serializers.ChampionshipSerializer(championship)
+    return Response(serializer.data)
+
+  if request.method == 'PUT':
+    serializer = serializers.ChampionshipSerializer(championship, data=request.data, partial=True)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+
+  if request.method == 'DELETE':
+    championship.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 

@@ -80,6 +80,9 @@ urlpatterns = [
     path('invoices/', views.invoices_list),
     path('invoice/<int:pk>/', views.invoice_detail),
 
+    path('champoints/', views.champion_list),
+    path('champoint/<int:pk>/', views.champion_detail),
+
 
 
     path('books/auto-cancel/', views.check_auto_cancell),
