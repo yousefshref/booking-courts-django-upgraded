@@ -263,14 +263,14 @@ class Book(models.Model):
 
   def save(self, *args, **kwargs):
     if self.pinned_to:
-        PinnedTime.objects.filter(book=self).delete()
-        dates_between = self.between_dates(str(self.date), str(self.pinned_to))
+      PinnedTime.objects.filter(book=self).delete()
+      dates_between = self.between_dates(str(self.date), str(self.pinned_to))
 
-        for d in dates_between:
-            if not PinnedTime.objects.filter(book=self, date=d).exists():
-                PinnedTime.objects.create(book=self, date=d)
-            else:
-                pass
+      for d in dates_between:
+        if not PinnedTime.objects.filter(book=self, date=d).exists():
+            PinnedTime.objects.create(book=self, date=d)
+        else:
+            pass
     elif self.pinned_to is None or not self.pinned_to:
       PinnedTime.objects.filter(book=self).delete()
 
@@ -315,7 +315,7 @@ class PinnedTime(models.Model):
     return str(self.book.court.name)+" - "+ str(self.date)
 
   def save(self, *args, **kwargs):
-    super().save(*args, **kwargs)
+    super().save()
 
 
 
