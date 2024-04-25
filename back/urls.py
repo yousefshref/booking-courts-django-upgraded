@@ -20,8 +20,8 @@ urlpatterns = [
     path('user/profile/', views.check_profile),
 
 
-    path('user/manager/profile/create/', views.create_manager_profile),
-    path('user/client/profile/create/', views.create_client_profile),
+    path('user/manager/profile/create-or-update/', views.create_or_update_manager_profile),
+    path('user/client/profile/create-or-update/', views.create_or_update_client_profile),
 
     path('countries/', views.countries_list),
     path('cities/<int:country_pk>/', views.cities_list),
@@ -91,6 +91,18 @@ urlpatterns = [
 
     path('white-lists/', views.white_list_list),
     path('white-list/<int:pk>/', views.white_list_detail),
+
+
+
+    # get manager courts and academyes
+    path('manager/<int:manager_id>/courts/', views.get_manager_courts),
+    path('manager/<int:manager_id>/academies/', views.get_manager_academies),
+
+
+
+
+
+    path('test/', views.create_court_instances),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

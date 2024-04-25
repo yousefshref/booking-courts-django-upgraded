@@ -26,10 +26,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = models.UserProfile
         fields = '__all__'
 
-class InvoiceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Invoice
-        fields = '__all__'
 
 
 
@@ -55,6 +51,7 @@ class CourtSerializer(serializers.ModelSerializer):
   country_details = CountrySerializer(source='country', read_only=True)
   city_details = CitySerializer(source='city', read_only=True)
   state_details = StateSerializer(source='state', read_only=True)
+  profile_details = ManagerProfileSerializer(source='manager', read_only=True)
   class Meta:
     model = models.Court
     fields = '__all__'
@@ -156,6 +153,11 @@ class AcademySubscribePlanSerializer(serializers.ModelSerializer):
 
 
 
+class InvoiceSerializer(serializers.ModelSerializer):
+  academy_details = AcademySerializer(source='academy', read_only=True)
+  class Meta:
+    model = models.Invoice
+    fields = '__all__'
 
 
 

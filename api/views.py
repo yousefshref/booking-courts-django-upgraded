@@ -223,7 +223,7 @@ def check_profile(request):
     serializer = serializers.StaffProfileSerializer(staff_profile)
     return Response({"staff": serializer.data})
 
-  else:  
+  elif models.UserProfile.objects.filter(user=request.user).exists():  
     user_profile = models.UserProfile.objects.get(user=request.user)
     serializer = serializers.UserProfileSerializer(user_profile)
     return Response({"user": serializer.data})
@@ -232,38 +232,57 @@ def check_profile(request):
 
 
 
-@api_view(['POST'])
+@api_view(['POST', 'PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def create_manager_profile(request):
-
-  if models.ManagerProfile.objects.filter(user=request.user).exists():
-    return Response({"":""})
+def create_or_update_manager_profile(request):
+  if request.method == 'POST':
+    if models.ManagerProfile.objects.filter(user=request.user).exists():
+      return Response({"":""})
+    
+    data = request.data.copy()
+    data['user'] = request.user.pk
+    serializer = serializers.ManagerProfileSerializer(data=data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
   
-  data = request.data.copy()
-  data['user'] = request.user.pk
-  serializer = serializers.ManagerProfileSerializer(data=data)
-  if serializer.is_valid():
-    serializer.save()
-    return Response(serializer.data)
-  return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+  if request.method == 'PUT':
+    profile = models.ManagerProfile.objects.get(user=request.user)
+    data = request.data.copy()
+    serializer = serializers.ManagerProfileSerializer(profile, data=data, partial=True)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+  
 
 
-@api_view(['POST'])
+@api_view(['POST', 'PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def create_client_profile(request):
+def create_or_update_client_profile(request):
+  if request.method == 'POST':
+    if models.UserProfile.objects.filter(user=request.user).exists():
+      return Response({"":""})
+    
+    data = request.data.copy()
+    data['user'] = request.user.pk
+    serializer = serializers.UserProfileSerializer(data=data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
   
-  if models.UserProfile.objects.filter(user=request.user).exists():
-    return Response({"":""})
-  
-  data = request.data.copy()
-  data['user'] = request.user.pk
-  serializer = serializers.UserProfileSerializer(data=data)
-  if serializer.is_valid():
-    serializer.save()
-    return Response(serializer.data)
-  return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+  if request.method == 'PUT':
+    profile = models.UserProfile.objects.get(user=request.user) 
+    data = request.data.copy()
+    serializer = serializers.UserProfileSerializer(profile, data=data, partial=True)
+    if serializer.is_valid():
+      serializer.save() 
+      return Response(serializer.data)
+    return Response(serializer.errors)
 
 
 
@@ -910,11 +929,20 @@ def invoices_list(request):
   if request.method == 'GET':
     invoices = models.Invoice.objects.none()
 
+    if not is_manager(request) and not is_staff(request):
+      invoices = models.Invoice.objects.filter(Q(user_profile__user=request.user) | Q(phone=request.user.phone))
+
     if is_manager(request):
       invoices = models.Invoice.objects.filter(manager=is_manager(request))
 
     if is_staff(request):
       invoices = models.Invoice.objects.filter(manager=is_staff(request).manager)
+
+    if request.GET.get('request'):
+      invoices = invoices.filter(request=request.GET.get('request'), is_accepted=False)
+
+    if request.GET.get('is_accepted'):
+      invoices = invoices.filter(is_accepted=request.GET.get('is_accepted'))
 
     if request.GET.get('created_at_start'):
       invoices = invoices.filter(created_at__gte=request.GET.get('created_at_start'))
@@ -943,6 +971,9 @@ def invoices_list(request):
     if request.GET.get('phone'):
       invoices = invoices.filter(phone__icontains=request.GET.get('phone'))
 
+    if request.GET.get('username'):
+      invoices = invoices.filter(user_profile__user__username=request.GET.get('username'))
+
     if request.GET.get('book_id'):
       invoices = invoices.filter(book__id=request.GET.get('book_id'))
 
@@ -959,7 +990,10 @@ def invoices_list(request):
 
   if request.method == 'POST':
     data = request.data.copy()
-    
+
+    if not is_manager(request) and not is_staff(request):
+      data['user_profile'] = models.UserProfile.objects.get(user=request.user).id
+
     if is_manager(request):
       data['manager'] = is_manager(request).id 
     
@@ -988,10 +1022,22 @@ def invoice_detail(request, pk):
     return Response(serializer.data)
 
   if request.method == 'PUT':
-    serializer = serializers.InvoiceSerializer(invoice, data=request.data, partial=True)
+    data = request.data.copy()
+    serializer = serializers.InvoiceSerializer(invoice, data=data, partial=True)
     if serializer.is_valid():
-      serializer.save()
-      return Response(serializer.data)
+      if data.get('is_academy') is None:
+        serializer.save()
+        return Response(serializer.data)
+      else:
+        if data['is_accepted'] == 'True' and data.get('is_academy') is not None:
+          instance = serializer.save()
+          send_whatsapp_message_function(instance.phone, f'تم قبول اشتراكك في الاكاديمية {instance.academy.name} بنجاح')
+          return Response(serializer.data)
+        else:
+          instance = serializer.save()  # Save the instance
+          send_whatsapp_message_function(instance.phone, f'تم رفض اشتراكك اشتراكك في الاكاديمية {instance.academy.name}')
+          instance.delete()
+          return Response({"deleted":"True"})
     return Response(serializer.errors)
 
   if request.method == 'DELETE':
@@ -1442,7 +1488,94 @@ def white_list_detail(request, pk):
 
 
 
+from rest_framework.pagination import PageNumberPagination
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_manager_courts(request, manager_id):
+  if request.method == 'GET':
+    courts = models.Court.objects.filter(manager=manager_id, is_active=True)
+    
+    # Apply pagination
+    paginator = PageNumberPagination()
+    paginator.page_size = 10  # Override default page size
+    paginated_courts = paginator.paginate_queryset(courts.order_by('-id'), request)
+    
+    serializer = serializers.CourtSerializer(paginated_courts, many=True)
+    return paginator.get_paginated_response(serializer.data)
+
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_manager_academies(request, manager_id):
+  if request.method == 'GET':
+    academies = models.Academy.objects.filter(manager=manager_id)
+    
+    # Apply pagination
+    paginator = PageNumberPagination()
+    paginator.page_size = 10  # Override default page size
+    paginated_academies = paginator.paginate_queryset(academies.order_by('-id'), request)
+    
+    serializer = serializers.AcademySerializer(paginated_academies, many=True)
+    return paginator.get_paginated_response(serializer.data)
+
+
+
+
+
+
+from faker import Faker
+from random import choice
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def create_court_instances(request):
+    num_instances=100
+    fake = Faker()
+
+    # Retrieve existing manager profiles, countries, cities, and states
+    managers = models.ManagerProfile.objects.all()
+    countries = models.Country.objects.all()
+    cities = models.City.objects.all()
+    states = models.State.objects.all()
+
+    # Create instances of the Court model
+    for _ in range(num_instances):
+        manager = choice(managers)
+        country = choice(countries)
+        city = choice(cities.filter(country=country))
+        state = choice(states.filter(city=city))
+
+        models.Court.objects.create(
+            manager=manager,
+            name=fake.company(),
+            address=fake.address(),
+            location_url=fake.url() if choice([True, False]) else None,
+            country=country,
+            city=city,
+            state=state,
+            price_per_hour=fake.pydecimal(left_digits=3, right_digits=2, positive=True),
+            open_from=fake.time_object(),
+            open_to=fake.time_object(),
+            close_from=fake.time_object() if choice([True, False]) else None,
+            close_to=fake.time_object() if choice([True, False]) else None,
+            is_active=True,
+            ball_price=fake.pydecimal(left_digits=2, right_digits=2, positive=True) if choice([True, False]) else None,
+            has_ball=choice([True, False]),
+            offer_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
+            offer_time_from=fake.time_object() if choice([True, False]) else None,
+            offer_time_to=fake.time_object() if choice([True, False]) else None,
+            event_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
+            event_time_from=fake.time_object() if choice([True, False]) else None,
+            event_time_to=fake.time_object() if choice([True, False]) else None
+        )
+
+    print(f"{num_instances} Court instances created successfully.")
+    return Response({"":""})
 
 
 

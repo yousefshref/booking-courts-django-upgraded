@@ -28,6 +28,11 @@ class VerificationCode(models.Model):
 
 class ManagerProfile(models.Model):
   user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+
+  logo = models.ImageField(upload_to='managers/', null=True, blank=True)
+  brand_name = models.CharField(max_length=100)
+  bio = models.TextField(null=True, blank=True)
+
   is_verified = models.BooleanField(default=False)
 
   can_academy = models.BooleanField(default=False)
@@ -68,6 +73,8 @@ class Setting(models.Model):
 
 class UserProfile(models.Model):
   user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+  profile_image = models.ImageField(upload_to='users/', null=True, default='', blank=True)
+  bio = models.TextField(null=True, blank=True)
   
   def __str__(self):
     return self.user.username
@@ -387,6 +394,10 @@ gender = (
 
 class Invoice(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE, null=True)
+
+  request = models.BooleanField(default=False)
+  user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True, blank=True)
+  is_accepted = models.BooleanField(default=False)
   
   court = models.ForeignKey('Court', on_delete=models.CASCADE, null=True, blank=True)
   book = models.ForeignKey('Book', on_delete=models.CASCADE, null=True, blank=True)
@@ -418,7 +429,7 @@ class Invoice(models.Model):
   updated_at = models.DateTimeField(auto_now=True)
 
   def __str__(self):
-    return self.manager.user.username
+    return str(self.manager)
 
   def save(self, *args, **kwargs):
     super().save(*args, **kwargs)
@@ -451,6 +462,27 @@ class WhiteList(models.Model):
 
   def __str__(self):
     return self.user.username
+
+
+
+
+
+
+
+
+
+class AcademySubscribeRequest(models.Model):
+  manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
+  academy = models.ForeignKey(Academy, on_delete=models.CASCADE)
+  
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
+
+
+
+
+
+
 
 
 
