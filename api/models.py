@@ -262,45 +262,17 @@ class Book(models.Model):
 
 
   def save(self, *args, **kwargs):
-    if self.pinned_to:
-      PinnedTime.objects.filter(book=self).delete()
-      dates_between = self.between_dates(str(self.date), str(self.pinned_to))
-
-      for d in dates_between:
-        if not PinnedTime.objects.filter(book=self, date=d).exists():
-            PinnedTime.objects.create(book=self, date=d)
-        else:
-            pass
-    elif self.pinned_to is None or not self.pinned_to:
-      PinnedTime.objects.filter(book=self).delete()
-
     super().save(*args, **kwargs)
 
-    
-    total_price = 0
+    if self.pinned_to:
+      # Delete old pinned times
+      PinnedTime.objects.filter(book=self).delete()
 
-    if self.offer_time and self.court.offer_time:
-      total_price += self.court.offer_time
-
-    elif self.event_time and self.court.event_time_from and self.court.event_time_to:
-      total_price += self.court.event_price
-
-    else:
-      total_price += self.court.price_per_hour
-
-    if self.with_ball and self.court.ball_price:
-      total_price += self.court.ball_price
-
-    tools = []
-    if len(tools) > 0:
-      tools = self.tools.all()
-      for t in tools:
-        total_price += t.price
-
-
-    self.total_price = total_price
-
-    super().save()
+      # Create new pinned times
+      dates_between = self.between_dates(str(self.date), str(self.pinned_to))
+      PinnedTime.objects.bulk_create([
+        PinnedTime(book=self, date=d) for d in dates_between
+      ])
 
 
 
@@ -313,9 +285,6 @@ class PinnedTime(models.Model):
 
   def __str__(self):
     return str(self.book.court.name)+" - "+ str(self.date)
-
-  def save(self, *args, **kwargs):
-    super().save()
 
 
 
