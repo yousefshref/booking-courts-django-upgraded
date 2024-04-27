@@ -356,68 +356,6 @@ class AcademyTrainer(models.Model):
 
 
 
-gender = (
-  ('ذكر', 'ذكر'),
-  ('انثى', 'انثى'),
-)
-
-class Invoice(models.Model):
-  manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE, null=True)
-
-  request = models.BooleanField(default=False)
-  user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True, blank=True)
-  is_accepted = models.BooleanField(default=False)
-  
-  court = models.ForeignKey('Court', on_delete=models.CASCADE, null=True, blank=True)
-  book = models.ForeignKey('Book', on_delete=models.CASCADE, null=True, blank=True)
-  academy = models.ForeignKey(Academy, on_delete=models.CASCADE, null=True, blank=True)
-
-  # academy
-  the_player_image = models.ImageField(upload_to='players/', null=True, blank=True)
-  birth_certificate_image = models.ImageField(upload_to='players-birth-certificates/', null=True, blank=True)
-  passport = models.ImageField(upload_to='players-passports/', null=True, blank=True)
-  id_card_image_of_player = models.ImageField(upload_to='players-id-cards/', null=True, blank=True)
-  id_card_image_of_player_parent = models.ImageField(upload_to='players-parents-id-cards/', null=True, blank=True)
-  name = models.CharField(max_length=255, null=True, default='لا يوجد اسم')
-  phone = models.CharField(max_length=255, null=True, default="01010101010")
-  age = models.IntegerField(null=True, blank=True, default=0)
-  gender = models.CharField(choices=gender, default='ذكر', max_length=255, null=True, blank=True)
-  nationality = models.CharField(max_length=255, null=True, blank=True)
-  father_phone = models.CharField(max_length=255, null=True, blank=True)
-  mother_phone = models.CharField(max_length=255, null=True, blank=True)
-  address = models.CharField(max_length=255, null=True, blank=True)
-  start_date = models.DateField(null=True, blank=True)
-  end_date = models.DateField(null=True, blank=True)
-
-  # normal
-  amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)
-  description = models.TextField(null=True, blank=True, max_length=255)
-  paied_with = models.CharField(choices=paied_with_choices, default='عند الحضور', max_length=255, null=True)
-
-  created_at = models.DateTimeField(auto_now_add=True)
-  updated_at = models.DateTimeField(auto_now=True)
-
-  def __str__(self):
-    return str(self.manager)
-
-  def save(self, *args, **kwargs):
-    super().save(*args, **kwargs)
-
-
-
-class Championship(models.Model):
-  invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
-  name = models.CharField(max_length=255)
-  champion_name = models.CharField(max_length=255)
-  image = models.ImageField(upload_to='championship/', null=True, blank=True)
-  image2 = models.ImageField(upload_to='championship/', null=True, blank=True)
-  image3 = models.ImageField(upload_to='championship/', null=True, blank=True)
-  created_at = models.DateTimeField(auto_now_add=True)
-
-
-
-
-
 class WhiteList(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
 
@@ -437,15 +375,82 @@ class WhiteList(models.Model):
 
 
 
-
-
-
-class AcademySubscribeRequest(models.Model):
+class Income(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
-  academy = models.ForeignKey(Academy, on_delete=models.CASCADE)
-  
-  created_at = models.DateTimeField(auto_now_add=True)
-  updated_at = models.DateTimeField(auto_now=True)
+  amount = models.IntegerField()
+  description = models.TextField(null=True, blank=True)
+  created_at = models.DateField(auto_now_add=True)
+  updated_at = models.DateField(auto_now=True)
+
+  def __str__(self):
+    return str(self.amount)
+
+
+class Expense(models.Model):
+  manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
+  amount = models.IntegerField()
+  description = models.TextField(null=True, blank=True)
+  created_at = models.DateField(auto_now_add=True)
+  updated_at = models.DateField(auto_now=True)
+
+  def __str__(self):
+    return str(self.amount)
+
+
+
+
+
+
+
+gender = (
+  ('ذكر', 'ذكر'),
+  ('انثى', 'انثى'),
+)
+
+
+
+
+class Subsribe(models.Model):
+  manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
+
+  academy_subscribe_plan = models.ForeignKey(AcademySubscribePlan, on_delete=models.CASCADE)
+
+  player_image = models.ImageField(upload_to='subscribe/', null=True, blank=True)
+  birth_cirtificate = models.ImageField(upload_to='subscribe/', null=True, blank=True)
+  national_id_image1 = models.ImageField(upload_to='subscribe/', null=True, blank=True)
+  national_id_image2 = models.ImageField(upload_to='subscribe/', null=True, blank=True)
+  national_id_parent1 = models.ImageField(upload_to='subscribe/', null=True, blank=True)
+  national_id_parent2 = models.ImageField(upload_to='subscribe/', null=True, blank=True)
+  passport_image = models.ImageField(upload_to='subscribe/', null=True, blank=True)
+
+  name = models.CharField(max_length=255)
+  phone = models.CharField(max_length=255)
+  birth_date = models.DateField(null=True)
+  gender = models.CharField(max_length=255, choices=gender)
+  mother_phone = models.CharField(max_length=255, null=True, blank=True)
+  father_phone = models.CharField(max_length=255, null=True, blank=True)
+
+
+  price = models.IntegerField()
+  start_from = models.DateField(null=True, blank=True)
+  end_to = models.DateField(null=True, blank=True)
+
+
+  request_from_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True, blank=True)
+  is_approved = models.BooleanField(default=False)
+
+  created_at = models.DateField(auto_now_add=True)
+  updated_at = models.DateField(auto_now=True)
+
+  def __str__(self):
+    return str(self.manager)
+
+
+
+
+
+
+
 
 
 

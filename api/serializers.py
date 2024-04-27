@@ -126,10 +126,6 @@ class AcademySerializer(serializers.ModelSerializer):
     model = models.Academy
     fields = '__all__'
 
-class ChampionshipSerializer(serializers.ModelSerializer):
-  class Meta:
-    model = models.Championship
-    fields = '__all__'
 
 
 class AcademyTimeSerializer(serializers.ModelSerializer):
@@ -153,15 +149,31 @@ class AcademySubscribePlanSerializer(serializers.ModelSerializer):
 
 
 
-class InvoiceSerializer(serializers.ModelSerializer):
-  academy_details = AcademySerializer(source='academy', read_only=True)
+
+
+
+class IncomeSerializer(serializers.ModelSerializer):
   class Meta:
-    model = models.Invoice
+    model = models.Income
+    fields = '__all__'
+
+
+class ExpenseSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.Expense
     fields = '__all__'
 
 
 
 
+
+
+
+class SubsribeSerializer(serializers.ModelSerializer):
+  academy_subscribe_plan_details = AcademySubscribePlanSerializer(source='academy_subscribe_plan', read_only=True)
+  class Meta:
+    model = models.Subsribe
+    fields = '__all__'
 
 
 

@@ -77,12 +77,6 @@ urlpatterns = [
     path('academy-trainers/', views.academy_trainers_list),
     path('academy-trainer/<int:pk>/', views.academy_trainer_detail),
 
-    path('invoices/', views.invoices_list),
-    path('invoice/<int:pk>/', views.invoice_detail),
-
-    path('champoints/', views.champion_list),
-    path('champoint/<int:pk>/', views.champion_detail),
-
 
 
     path('books/auto-cancel/', views.check_auto_cancell),
@@ -99,7 +93,15 @@ urlpatterns = [
     path('manager/<int:manager_id>/academies/', views.get_manager_academies),
 
 
+    path('incomes/', views.incomes_list),
+    path('income/<int:pk>/', views.income_detail),
 
+    path('expenses/', views.expense_list),
+    path('expense/<int:pk>/', views.expense_detail),
+
+
+    path('subscriptions/', views.subscriptions_list),
+    path('subscription/<int:pk>/', views.subscription_detail),
 
 
     path('test/', views.create_court_instances),

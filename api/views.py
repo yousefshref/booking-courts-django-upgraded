@@ -179,6 +179,14 @@ def is_staff(request):
   except:
     return False
 
+def is_user(request):
+  try:
+    user_profile = models.UserProfile.objects.get(user=request.user)
+    return user_profile
+  except:
+    return False
+
+
 
 
 
@@ -922,133 +930,6 @@ def pinned_detail(request, pinned_time_id):
 
 
 
-@api_view(['GET', 'POST'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def invoices_list(request):
-  if request.method == 'GET':
-    invoices = models.Invoice.objects.none()
-
-    if not is_manager(request) and not is_staff(request):
-      invoices = models.Invoice.objects.filter(Q(user_profile__user=request.user) | Q(phone=request.user.phone))
-
-    if is_manager(request):
-      invoices = models.Invoice.objects.filter(manager=is_manager(request))
-
-    if is_staff(request):
-      invoices = models.Invoice.objects.filter(manager=is_staff(request).manager)
-
-    if request.GET.get('request'):
-      invoices = invoices.filter(request=request.GET.get('request'), is_accepted=False)
-
-    if request.GET.get('is_accepted'):
-      invoices = invoices.filter(is_accepted=request.GET.get('is_accepted'))
-
-    if request.GET.get('created_at_start'):
-      invoices = invoices.filter(created_at__gte=request.GET.get('created_at_start'))
-
-    if request.GET.get('created_at_end'):
-      invoices = invoices.filter(created_at__lte=request.GET.get('created_at_end'))
-
-    if request.GET.get('only_courts'):
-      invoices = invoices.filter(court__isnull=False)
-
-    if request.GET.get('only_books'):
-      invoices = invoices.filter(book__isnull=False)
-
-    if request.GET.get('only_academies'):
-      invoices = invoices.filter(academy__isnull=False)
-
-    if request.GET.get('start_date'):
-      invoices = invoices.filter(start_date=request.GET.get('start_date'))
-
-    if request.GET.get('end_date'):
-      invoices = invoices.filter(end_date=request.GET.get('end_date'))
-
-    if request.GET.get('name'):
-      invoices = invoices.filter(name__icontains=request.GET.get('name'))
-
-    if request.GET.get('phone'):
-      invoices = invoices.filter(phone__icontains=request.GET.get('phone'))
-
-    if request.GET.get('username'):
-      invoices = invoices.filter(user_profile__user__username=request.GET.get('username'))
-
-    if request.GET.get('book_id'):
-      invoices = invoices.filter(book__id=request.GET.get('book_id'))
-
-    if request.GET.get('court_id'):
-      invoices = invoices.filter(court__id=request.GET.get('court_id'))
-    
-    if request.GET.get('academy_id'):
-      invoices = invoices.filter(academy__id=request.GET.get('academy_id'))
-
-
-
-    serializer = serializers.InvoiceSerializer(invoices.order_by('-id'), many=True)
-    return Response(serializer.data)
-
-  if request.method == 'POST':
-    data = request.data.copy()
-
-    if not is_manager(request) and not is_staff(request):
-      data['user_profile'] = models.UserProfile.objects.get(user=request.user).id
-
-    if is_manager(request):
-      data['manager'] = is_manager(request).id 
-    
-    if is_staff(request):
-      data['manager'] = is_staff(request).manager.id
-
-    serializer = serializers.InvoiceSerializer(data=data)
-    if serializer.is_valid():
-      serializer.save()
-      return Response(serializer.data)
-    return Response(serializer.errors)
-
-
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def invoice_detail(request, pk):
-  try:
-    invoice = models.Invoice.objects.get(pk=pk)
-  except models.Invoice.DoesNotExist:
-    return Response({"error": "Invoice does not exist"})
-
-  if request.method == 'GET':
-    serializer = serializers.InvoiceSerializer(invoice)
-    return Response(serializer.data)
-
-  if request.method == 'PUT':
-    data = request.data.copy()
-    serializer = serializers.InvoiceSerializer(invoice, data=data, partial=True)
-    if serializer.is_valid():
-      if data.get('is_academy') is None:
-        serializer.save()
-        return Response(serializer.data)
-      else:
-        if data['is_accepted'] == 'True' and data.get('is_academy') is not None:
-          instance = serializer.save()
-          send_whatsapp_message_function(instance.phone, f'تم قبول اشتراكك في الاكاديمية {instance.academy.name} بنجاح')
-          return Response(serializer.data)
-        else:
-          instance = serializer.save()  # Save the instance
-          send_whatsapp_message_function(instance.phone, f'تم رفض اشتراكك اشتراكك في الاكاديمية {instance.academy.name}')
-          instance.delete()
-          return Response({"deleted":"True"})
-    return Response(serializer.errors)
-
-  if request.method == 'DELETE':
-    invoice.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
-
-
-
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -1397,55 +1278,6 @@ def white_list_list(request):
 
 
 
-@api_view(['GET', 'POST'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def champion_list(request):
-  if request.method == 'GET':
-    championships = models.Championship.objects.none()
-
-    if is_manager(request):
-      championships = models.Championship.objects.filter(invoice__manager=is_manager(request))
-
-    if is_staff(request):
-      championships = models.Championship.objects.filter(invoice__manager=is_staff(request).manager)
-    
-    serializer = serializers.ChampionshipSerializer(championships, many=True)
-    return Response(serializer.data)
-  
-  if request.method == 'POST':
-    serializer = serializers.ChampionshipSerializer(data=request.data)
-    if serializer.is_valid():
-      serializer.save()
-      return Response(serializer.data)  
-    return Response(serializer.errors)
-
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def champion_detail(request, pk):
-  try:
-    championship = models.Championship.objects.get(pk=pk)
-  except models.Championship.DoesNotExist:
-    return Response({"error": "Championship does not exist"})
-
-  if request.method == 'GET':
-    serializer = serializers.ChampionshipSerializer(championship)
-    return Response(serializer.data)
-
-  if request.method == 'PUT':
-    serializer = serializers.ChampionshipSerializer(championship, data=request.data, partial=True)
-    if serializer.is_valid():
-      serializer.save()
-      return Response(serializer.data)
-    return Response(serializer.errors)
-
-  if request.method == 'DELETE':
-    championship.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -1527,6 +1359,251 @@ def get_manager_academies(request, manager_id):
 
 
 
+
+@api_view(['GET', 'POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def incomes_list(request):
+  if request.method == 'GET':
+    incomes = models.Income.objects.none()
+
+    if is_manager(request):
+      incomes = models.Income.objects.filter(manager=is_manager(request))
+
+    if is_staff(request):
+      incomes = models.Income.objects.filter(manager=is_staff(request).manager)
+
+    if request.GET.get('from_date'):
+      incomes = incomes.filter(created_at__gte=request.GET.get('from_date'))
+
+    if request.GET.get('to_date'):
+      incomes = incomes.filter(created_at__lte=request.GET.get('to_date'))
+
+    serializer = serializers.IncomeSerializer(incomes.order_by('-id'), many=True)
+
+    return Response(serializer.data)
+
+  if request.method == 'POST':
+    data = request.data.copy()
+
+    if is_manager(request):
+      data['manager'] = is_manager(request).pk
+    
+    if is_staff(request):
+      data['manager'] = is_staff(request).manager.pk
+
+    serializer = serializers.IncomeSerializer(data=data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+
+
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def income_detail(request, pk):
+  try:
+    income = models.Income.objects.get(pk=pk)
+  except models.Income.DoesNotExist:
+    return Response({"error": "Income does not exist"})
+
+  if request.method == 'GET':
+    serializer = serializers.IncomeSerializer(income)
+    return Response(serializer.data)
+
+  if request.method == 'PUT':
+    data = request.data.copy()
+    serializer = serializers.IncomeSerializer(income, data=data, partial=True)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+  
+  if request.method == 'DELETE':
+    income.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
+
+
+
+@api_view(['GET', 'POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def expense_list(request):
+  if request.method == 'GET':
+    expenses = models.Expense.objects.none()
+
+    if is_manager(request): 
+      expenses = models.Expense.objects.filter(manager=is_manager(request)) 
+    
+    if is_staff(request):
+      expenses = models.Expense.objects.filter(manager=is_staff(request).manager)
+
+    if request.GET.get('from_date'):
+      expenses = expenses.filter(created_at__gte=request.GET.get('from_date'))
+
+    if request.GET.get('to_date'):
+      expenses = expenses.filter(created_at__lte=request.GET.get('to_date'))
+
+    serializer = serializers.ExpenseSerializer(expenses.order_by('-id'), many=True)
+    return Response(serializer.data)
+
+  if request.method == 'POST':
+    data = request.data.copy()
+    if is_manager(request):
+      data['manager'] = is_manager(request).pk
+
+    if is_staff(request):
+      data['manager'] = is_staff(request).manager.pk
+    serializer = serializers.ExpenseSerializer(data=data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+
+
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def expense_detail(request, pk):
+  try:
+    expense = models.Expense.objects.get(pk=pk) 
+  except models.Expense.DoesNotExist:
+    return Response({"error": "Expense does not exist"})
+  
+  if request.method == 'GET':
+    serializer = serializers.ExpenseSerializer(expense) 
+    return Response(serializer.data)
+  
+  if request.method == 'PUT':
+    data = request.data.copy()
+    serializer = serializers.ExpenseSerializer(expense, data=data, partial=True)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+  
+  if request.method == 'DELETE':
+    expense.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
+
+
+
+@api_view(['GET', 'POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def subscriptions_list(request):
+  if request.method == 'GET':
+    subscribes = models.Subsribe.objects.none()
+
+    if is_manager(request):
+      subscribes = models.Subsribe.objects.filter(manager=is_manager(request))
+
+    if is_staff(request):
+      subscribes = models.Subsribe.objects.filter(manager=is_staff(request).manager)
+
+    if is_user(request):
+      subscribes = models.Subsribe.objects.filter(Q(phone=is_user(request).user.phone) or Q(request_from_profile__pk=is_user(request).pk))
+
+    if request.GET.get('from_date'):
+      subscribes = subscribes.filter(created_at__gte=request.GET.get('from_date'))
+
+    if request.GET.get('to_date'):
+      subscribes = subscribes.filter(created_at__lte=request.GET.get('to_date'))
+
+    if request.GET.get('phone'):
+      subscribes = subscribes.filter(phone=request.GET.get('phone'))
+    
+
+    if request.GET.get('requests_from_profile') == 'False':
+      subscribes = subscribes.filter(Q(request_from_profile__isnull=True))
+
+    if request.GET.get('requests_from_profile') == 'True':
+      subscribes = subscribes.filter(request_from_profile__isnull=False)
+
+    if request.GET.get('is_approved') == 'True' or request.GET.get('is_approved') == 'False':
+      subscribes = subscribes.filter(Q(is_approved=request.GET.get('is_approved')))
+
+
+    serializer = serializers.SubsribeSerializer(subscribes.order_by('-id'), many=True)
+    return Response(serializer.data)
+
+  if request.method == 'POST':
+    data = request.data.copy()
+
+    if is_manager(request):
+      data['manager'] = is_manager(request).pk
+
+    if is_staff(request):
+      data['manager'] = is_staff(request).manager.pk
+
+    if is_user(request):
+      manager = models.AcademySubscribePlan.objects.get(pk=data['academy_subscribe_plan']).academy.manager
+      data['manager'] = manager.pk
+      data['request_from_profile'] = is_user(request).pk
+
+    serializer = serializers.SubsribeSerializer(data=data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+
+
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def subscription_detail(request, pk):
+  try:
+    subscribe = models.Subsribe.objects.get(pk=pk)
+  except models.Subsribe.DoesNotExist:
+    return Response({"error": "Subscribe does not exist"})
+  
+  if request.method == 'GET':
+    serializer = serializers.SubsribeSerializer(subscribe)
+    return Response(serializer.data)
+  
+  if request.method == 'PUT':
+    data = request.data.copy()
+    serializer = serializers.SubsribeSerializer(subscribe, data=data, partial=True)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+  
+  if request.method == 'DELETE':
+    subscribe.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 from faker import Faker
 from random import choice
 
@@ -1576,6 +1653,24 @@ def create_court_instances(request):
 
     print(f"{num_instances} Court instances created successfully.")
     return Response({"":""})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
