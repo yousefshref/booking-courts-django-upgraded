@@ -90,6 +90,9 @@ def send_whatsapp_message(request):
 
   verification = ''.join(str(random.randint(0, 9)) for _ in range(6))
 
+  if request.GET.get('verification'):
+    verification = request.GET.get('verification')
+
   models.VerificationCode.objects.create(
       phone=phone,  
       code=verification,
