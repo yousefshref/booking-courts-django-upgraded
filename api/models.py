@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
-
+from django.utils import timezone
 
 
 
@@ -121,6 +121,16 @@ class State(models.Model):
 
 
 
+
+
+class CourtType(models.Model):
+  name = models.CharField(max_length=255)
+
+  def __str__(self):
+    return self.name
+
+
+
 class Court(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
   name = models.CharField(max_length=255)
@@ -130,6 +140,8 @@ class Court(models.Model):
   country = models.ForeignKey(Country, on_delete=models.CASCADE)
   city = models.ForeignKey(City, on_delete=models.CASCADE)
   state = models.ForeignKey(State, on_delete=models.CASCADE)
+
+  type = models.ForeignKey(CourtType, on_delete=models.CASCADE)
 
   price_per_hour = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -162,6 +174,12 @@ class Court(models.Model):
     super().save(*args, **kwargs)
     if self.manager.is_verified:
       self.is_active = True
+
+    if self.ball_price:
+      self.has_ball = True
+    else:
+      self.has_ball = False
+
     super().save()
 
 
@@ -379,6 +397,8 @@ class Income(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
   amount = models.IntegerField()
   description = models.TextField(null=True, blank=True)
+
+  created_time = models.TimeField(auto_now_add=True, null=True)
   created_at = models.DateField(auto_now_add=True)
   updated_at = models.DateField(auto_now=True)
 
@@ -390,6 +410,8 @@ class Expense(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
   amount = models.IntegerField()
   description = models.TextField(null=True, blank=True)
+
+  created_time = models.TimeField(auto_now_add=True, null=True)
   created_at = models.DateField(auto_now_add=True)
   updated_at = models.DateField(auto_now=True)
 
@@ -444,6 +466,29 @@ class Subsribe(models.Model):
 
   def __str__(self):
     return str(self.manager)
+
+
+  def save(self, *args, **kwargs):
+    super(Subsribe, self).save(*args, **kwargs)
+    if self.request_from_profile:
+      exist = Income.objects.filter(amount=self.price, description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}").exists()
+      if not exist:
+        income = Income.objects.create(
+          manager=self.academy_subscribe_plan.academy.manager,
+          amount=self.price,
+          description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}",
+        )
+    if not self.request_from_profile:
+      exist = Income.objects.filter(amount=self.price, description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP").exists()
+      if not exist:
+        income = Income.objects.create(
+          manager=self.academy_subscribe_plan.academy.manager,
+          amount=self.price,
+          description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP",
+        )
+    super(Subsribe, self).save()
+
+  
 
 
 

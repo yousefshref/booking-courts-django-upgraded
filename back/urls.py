@@ -26,6 +26,8 @@ urlpatterns = [
     path('countries/', views.countries_list),
     path('cities/<int:country_pk>/', views.cities_list),
     path('states/<int:city_pk>/', views.states_list),
+    
+    path('court-types/', views.courts_types_list),
 
     path('courts/', views.courts_list),
     path('court/<int:pk>/', views.court_detail),
@@ -104,7 +106,7 @@ urlpatterns = [
     path('subscription/<int:pk>/', views.subscription_detail),
 
 
-    path('test/', views.create_court_instances),
+    path('test/', views.test),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

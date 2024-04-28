@@ -47,6 +47,12 @@ class StateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CourtTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CourtType
+        fields = '__all__'
+
+
 class CourtSerializer(serializers.ModelSerializer):
   country_details = CountrySerializer(source='country', read_only=True)
   city_details = CitySerializer(source='city', read_only=True)

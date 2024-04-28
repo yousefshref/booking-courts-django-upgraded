@@ -319,6 +319,15 @@ def states_list(request, city_pk):
   return Response(serializer.data)
 
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def courts_types_list(request):
+  types = models.CourtType.objects.all()
+  serializer = serializers.CourtTypeSerializer(types, many=True)
+  return Response(serializer.data)
+
+
 @api_view(['GET','POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -341,9 +350,11 @@ def courts_list(request):
     if request.GET.get('state'):
       courts = courts.filter(state__id=request.GET.get('state'))
     
-
     if request.GET.get('name'):
       courts = courts.filter(name__icontains=request.GET.get('name'))
+
+    if request.GET.get('type'):
+      courts = courts.filter(type__pk=request.GET.get('type'))
 
 
     serializer = serializers.CourtSerializer(courts, many=True)
@@ -703,10 +714,8 @@ def get_time_slots(start_time_str, end_time_str, slot_duration):
   
   # Case: Same times, return 24-hour slots
   if start_time == end_time:
-    start_time = datetime.strptime('00:00', '%H:%M')
-    end_time = datetime.strptime('23:59', '%H:%M')
-    slots = generate_time_slots(start_time, end_time, slot_duration)
-    return [f"{slots[i]}-{slots[i+1]}" for i in range(len(slots)-1)]
+    slots = ['00:00-01:00', '01:00-02:00', '02:00-03:00', '03:00-04:00', '04:00-05:00', '05:00-06:00', '06:00-07:00', '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00', '22:00-23:00', '23:00-00:00']
+    return slots
 
   # Case: Start time is greater than end time
   elif start_time > end_time:
@@ -1610,48 +1619,49 @@ from random import choice
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def create_court_instances(request):
-    num_instances=100
-    fake = Faker()
+def test(request):
+    print(get_time_slots('00:00', '00:00', 60))
+    # num_instances=100
+    # fake = Faker()
 
-    # Retrieve existing manager profiles, countries, cities, and states
-    managers = models.ManagerProfile.objects.all()
-    countries = models.Country.objects.all()
-    cities = models.City.objects.all()
-    states = models.State.objects.all()
+    # # Retrieve existing manager profiles, countries, cities, and states
+    # managers = models.ManagerProfile.objects.all()
+    # countries = models.Country.objects.all()
+    # cities = models.City.objects.all()
+    # states = models.State.objects.all()
 
-    # Create instances of the Court model
-    for _ in range(num_instances):
-        manager = choice(managers)
-        country = choice(countries)
-        city = choice(cities.filter(country=country))
-        state = choice(states.filter(city=city))
+    # # Create instances of the Court model
+    # for _ in range(num_instances):
+    #     manager = choice(managers)
+    #     country = choice(countries)
+    #     city = choice(cities.filter(country=country))
+    #     state = choice(states.filter(city=city))
 
-        models.Court.objects.create(
-            manager=manager,
-            name=fake.company(),
-            address=fake.address(),
-            location_url=fake.url() if choice([True, False]) else None,
-            country=country,
-            city=city,
-            state=state,
-            price_per_hour=fake.pydecimal(left_digits=3, right_digits=2, positive=True),
-            open_from=fake.time_object(),
-            open_to=fake.time_object(),
-            close_from=fake.time_object() if choice([True, False]) else None,
-            close_to=fake.time_object() if choice([True, False]) else None,
-            is_active=True,
-            ball_price=fake.pydecimal(left_digits=2, right_digits=2, positive=True) if choice([True, False]) else None,
-            has_ball=choice([True, False]),
-            offer_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
-            offer_time_from=fake.time_object() if choice([True, False]) else None,
-            offer_time_to=fake.time_object() if choice([True, False]) else None,
-            event_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
-            event_time_from=fake.time_object() if choice([True, False]) else None,
-            event_time_to=fake.time_object() if choice([True, False]) else None
-        )
+    #     models.Court.objects.create(
+    #         manager=manager,
+    #         name=fake.company(),
+    #         address=fake.address(),
+    #         location_url=fake.url() if choice([True, False]) else None,
+    #         country=country,
+    #         city=city,
+    #         state=state,
+    #         price_per_hour=fake.pydecimal(left_digits=3, right_digits=2, positive=True),
+    #         open_from=fake.time_object(),
+    #         open_to=fake.time_object(),
+    #         close_from=fake.time_object() if choice([True, False]) else None,
+    #         close_to=fake.time_object() if choice([True, False]) else None,
+    #         is_active=True,
+    #         ball_price=fake.pydecimal(left_digits=2, right_digits=2, positive=True) if choice([True, False]) else None,
+    #         has_ball=choice([True, False]),
+    #         offer_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
+    #         offer_time_from=fake.time_object() if choice([True, False]) else None,
+    #         offer_time_to=fake.time_object() if choice([True, False]) else None,
+    #         event_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
+    #         event_time_from=fake.time_object() if choice([True, False]) else None,
+    #         event_time_to=fake.time_object() if choice([True, False]) else None
+    #     )
 
-    print(f"{num_instances} Court instances created successfully.")
+    # print(f"{num_instances} Court instances created successfully.")
     return Response({"":""})
 
 
