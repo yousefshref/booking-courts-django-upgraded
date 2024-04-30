@@ -141,7 +141,7 @@ class Court(models.Model):
   city = models.ForeignKey(City, on_delete=models.CASCADE)
   state = models.ForeignKey(State, on_delete=models.CASCADE)
 
-  type = models.ForeignKey(CourtType, on_delete=models.CASCADE)
+  type = models.ForeignKey(CourtType, on_delete=models.CASCADE, null=True)
 
   price_per_hour = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -361,6 +361,7 @@ class AcademySubscribePlan(models.Model):
 
 class Trainer(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE, null=True)
+  image = models.ImageField(upload_to='trainers/')
   trainer = models.CharField(max_length=255, unique=True, db_index=True)
   type = models.ForeignKey(AcademyType, on_delete=models.CASCADE)
   price_per_class = models.IntegerField(null=True, blank=True, default=0)
