@@ -104,6 +104,7 @@ urlpatterns = [
 
     path('subscriptions/', views.subscriptions_list),
     path('subscription/<int:pk>/', views.subscription_detail),
+    path('subscription-renew/<int:pk>/', views.subscription_renew),
 
 
     path('test/', views.test),

@@ -367,7 +367,13 @@ class AcademyTrainer(models.Model):
   price_per_week = models.IntegerField(null=True, blank=True, default=0)
   price_per_month = models.IntegerField(null=True, blank=True, default=0)
   price_per_year = models.IntegerField(null=True, blank=True, default=0)
+  is_active = models.BooleanField(default=False)
   created_at = models.DateTimeField(auto_now_add=True)
+
+  def save(self, *args, **kwargs):
+    if self.manager.is_verified:
+      self.is_active = True
+    super().save()
 
   def __str__(self):
     return str(self.type.name)+" - "+ str(self.trainer)
