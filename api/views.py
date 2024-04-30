@@ -1082,15 +1082,37 @@ def academy_time_detail(request, pk):
 @permission_classes([IsAuthenticated])
 def academy_trainers_list(request):
   if request.method == 'GET':
-    academy_trainers = models.AcademyTrainer.objects.all()
+    academy_trainers = models.Trainer.objects.filter(is_active=True)
 
     if is_manager(request):
-      academy_trainers = models.AcademyTrainer.objects.filter(manager=is_manager(request))
+      academy_trainers = models.Trainer.objects.filter(manager=is_manager(request))
     
     if is_staff(request):
-      academy_trainers = models.AcademyTrainer.objects.filter(manager=is_staff(request).manager)
+      academy_trainers = models.Trainer.objects.filter(manager=is_staff(request).manager)
 
-    serializer = serializers.AcademyTrainerSerializer(academy_trainers.order_by('-id'), many=True)
+    
+    if request.GET.get('type_id'):
+      academy_trainers = academy_trainers.filter(type__id=request.GET.get('type_id'))
+    
+    if request.GET.get('price_from') and request.GET.get('price_to'):
+      price_from = int(request.GET.get('price_from'))
+      price_to = int(request.GET.get('price_to'))
+      # Initialize an empty Q object to build your query
+      q_object = Q()
+
+      # Add conditions for each price field
+      q_object |= Q(price_per_class__range=(price_from, price_to))
+      q_object |= Q(price_per_week__range=(price_from, price_to))
+      q_object |= Q(price_per_month__range=(price_from, price_to))
+      q_object |= Q(price_per_year__range=(price_from, price_to))
+
+      # Perform the filtering and return the queryset
+      academy_trainers = academy_trainers .filter(q_object)
+
+
+    
+
+    serializer = serializers.TrainerSerializer(academy_trainers.order_by('-id'), many=True)
     return Response(serializer.data)
 
   if request.method == 'POST':
@@ -1102,7 +1124,7 @@ def academy_trainers_list(request):
     if is_staff(request):
       data['manager'] = is_staff(request).manager.pk
 
-    serializer = serializers.AcademyTrainerSerializer(data=data)
+    serializer = serializers.TrainerSerializer(data=data)
     if serializer.is_valid():
       serializer.save()
       return Response(serializer.data)
@@ -1114,16 +1136,16 @@ def academy_trainers_list(request):
 @permission_classes([IsAuthenticated])
 def academy_trainer_detail(request, pk):
   try:
-    academy_trainer = models.AcademyTrainer.objects.get(pk=pk)
-  except models.AcademyTrainer.DoesNotExist:
+    academy_trainer = models.Trainer.objects.get(pk=pk)
+  except models.Trainer.DoesNotExist:
     return Response({"error": "Academy Trainer does not exist"})
 
   if request.method == 'GET':
-    serializer = serializers.AcademyTrainerSerializer(academy_trainer)
+    serializer = serializers.TrainerSerializer(academy_trainer)
     return Response(serializer.data)
 
   if request.method == 'PUT':
-    serializer = serializers.AcademyTrainerSerializer(academy_trainer, data=request.data, partial=True)
+    serializer = serializers.TrainerSerializer(academy_trainer, data=request.data, partial=True)
     if serializer.is_valid():
       serializer.save()
       return Response(serializer.data)
@@ -1564,7 +1586,14 @@ def subscriptions_list(request):
       data['manager'] = is_staff(request).manager.pk
 
     if is_user(request):
-      manager = models.AcademySubscribePlan.objects.get(pk=data['academy_subscribe_plan']).academy.manager
+      try:
+        manager = models.AcademySubscribePlan.objects.get(pk=data['academy_subscribe_plan']).academy.manager
+      except:
+        pass
+      try:
+        manager = models.Trainer.objects.get(pk=data['trainer']).manager
+      except:
+        pass
       data['manager'] = manager.pk
       data['request_from_profile'] = is_user(request).pk
 
@@ -1602,6 +1631,39 @@ def subscription_detail(request, pk):
     subscribe.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def subscription_renew(request, pk):
+  subscribe = models.Subsribe.objects.get(pk=pk)
+
+  new_subscribe = models.Subsribe.objects.create(
+    manager = subscribe.manager,
+    academy_subscribe_plan = subscribe.academy_subscribe_plan,
+    trainer = subscribe.trainer,
+    player_image = subscribe.player_image,
+    birth_cirtificate = subscribe.birth_cirtificate,
+    national_id_image1 = subscribe.national_id_image1,
+    national_id_image2 = subscribe.national_id_image2,
+    national_id_parent1 = subscribe.national_id_parent1,
+    national_id_parent2 = subscribe.national_id_parent2,
+    passport_image = subscribe.passport_image,
+    name = subscribe.name,
+    phone = subscribe.phone,
+    birth_date = subscribe.birth_date,
+    gender = subscribe.gender,
+    mother_phone = subscribe.mother_phone,
+    father_phone = subscribe.father_phone,
+    price = subscribe.price,
+    start_from = subscribe.start_from,
+    end_to = subscribe.end_to,
+    request_from_profile = subscribe.request_from_profile,
+    is_approved=subscribe.is_approved
+  )
+
+  return Response(serializers.SubsribeSerializer(new_subscribe).data)
+  
 
 
 
