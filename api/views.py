@@ -1123,6 +1123,10 @@ def academy_trainers_list(request):
     
     if is_staff(request):
       data['manager'] = is_staff(request).manager.pk
+    
+    if is_user(request):
+      data['request_from_profile'] = is_user(request).pk
+      data['is_approved'] = False
 
     serializer = serializers.TrainerSerializer(data=data)
     if serializer.is_valid():

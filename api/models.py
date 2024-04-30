@@ -30,11 +30,12 @@ class ManagerProfile(models.Model):
   user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
 
   logo = models.ImageField(upload_to='managers/', null=True, blank=True)
-  brand_name = models.CharField(max_length=100)
+  brand_name = models.CharField(max_length=100, null=True)
   bio = models.TextField(null=True, blank=True)
 
   is_verified = models.BooleanField(default=False)
 
+  can_private_trainer = models.BooleanField(default=False)
   can_academy = models.BooleanField(default=False)
   can_courts = models.BooleanField(default=False)
 
@@ -280,6 +281,20 @@ class Book(models.Model):
 
 
   def save(self, *args, **kwargs):
+    if self.pk is None and self.is_paied:
+      income = Income.objects.create(
+        manager=self.court.manager,
+        amount=self.total_price,
+        description=f'حجز ملعب {self.court.name} في {self.date} من {self.start_time} الى {self.end_time} | بواسطة {self.user.username}',
+      ).save()
+
+    if self.pk is None and not self.is_paied:
+      expense = Expense.objects.create(
+        manager=self.court.manager,
+        amount=self.total_price,
+        description=f'الغاء حجز ملعب {self.court.name} في {self.date} من {self.start_time} الى {self.end_time} | المستخدم: {self.user.username}',
+      ).save()
+
     super().save(*args, **kwargs)
 
     if self.pinned_to:
@@ -291,6 +306,8 @@ class Book(models.Model):
       PinnedTime.objects.bulk_create([
         PinnedTime(book=self, date=d) for d in dates_between
       ])
+
+    super().save()
 
 
 
@@ -442,7 +459,8 @@ gender = (
 class Subsribe(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE)
 
-  academy_subscribe_plan = models.ForeignKey(AcademySubscribePlan, on_delete=models.CASCADE)
+  academy_subscribe_plan = models.ForeignKey(AcademySubscribePlan, on_delete=models.CASCADE, null=True, blank=True)
+  trainer = models.ForeignKey(Trainer, on_delete=models.CASCADE, null=True, blank=True)
 
   player_image = models.ImageField(upload_to='subscribe/', null=True, blank=True)
   birth_cirtificate = models.ImageField(upload_to='subscribe/', null=True, blank=True)
@@ -476,8 +494,8 @@ class Subsribe(models.Model):
 
 
   def save(self, *args, **kwargs):
-    super(Subsribe, self).save(*args, **kwargs)
-    if self.request_from_profile:
+    # academy
+    if self.request_from_profile and self.academy_subscribe_plan:
       exist = Income.objects.filter(amount=self.price, description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}").exists()
       if not exist:
         income = Income.objects.create(
@@ -485,7 +503,7 @@ class Subsribe(models.Model):
           amount=self.price,
           description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}",
         )
-    if not self.request_from_profile:
+    if not self.request_from_profile and self.academy_subscribe_plan:
       exist = Income.objects.filter(amount=self.price, description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP").exists()
       if not exist:
         income = Income.objects.create(
@@ -493,7 +511,26 @@ class Subsribe(models.Model):
           amount=self.price,
           description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP",
         )
-    super(Subsribe, self).save()
+    
+    # trainer
+    if self.request_from_profile and self.trainer:
+      exist = Income.objects.filter(amount=self.price, description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
+      if (not exist) or (self.pk and exist):
+        income = Income.objects.create(
+          manager=self.trainer.manager,
+          amount=self.price,
+          description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
+        )
+    if not self.request_from_profile and self.trainer:
+      exist = Income.objects.filter(amount=self.price, description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
+      if (not exist) or (not self.pk and exist):
+        income = Income.objects.create(
+          manager=self.trainer.manager,
+          amount=self.price,
+          description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
+        )
+
+    super(Subsribe, self).save(*args, **kwargs)
 
   
 
