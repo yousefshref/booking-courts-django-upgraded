@@ -359,7 +359,7 @@ class AcademySubscribePlan(models.Model):
 
 
 
-class AcademyTrainer(models.Model):
+class Trainer(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE, null=True)
   trainer = models.CharField(max_length=255, unique=True, db_index=True)
   type = models.ForeignKey(AcademyType, on_delete=models.CASCADE)

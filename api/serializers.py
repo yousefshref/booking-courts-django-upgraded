@@ -140,10 +140,11 @@ class AcademyTimeSerializer(serializers.ModelSerializer):
     fields = '__all__'
 
 
-class AcademyTrainerSerializer(serializers.ModelSerializer):
+class TrainerSerializer(serializers.ModelSerializer):
   manager_details = ManagerProfileSerializer(source='manager', read_only=True)
+  type_details = AcademyTypeSerializer(source='type', read_only=True)
   class Meta:
-    model = models.AcademyTrainer
+    model = models.Trainer
     fields = '__all__'
 
 
