@@ -416,6 +416,49 @@ def court_detail(request, pk):
 
 
 
+@api_view(['GET', 'POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def court_close_times_list(request, court_id):
+  if request.method == 'GET':
+    times = models.CourtCloseTime.objects.filter(court__pk=court_id)
+    serializer = serializers.CourtCloseTimeSerializer(times, many=True)
+    return Response(serializer.data)
+
+  if request.method == 'POST':
+    serializer = serializers.CourtCloseTimeSerializer(data=request.data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+  
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def court_close_time_detail(request, pk):
+  try:
+    time = models.CourtCloseTime.objects.get(pk=pk)
+  except models.CourtCloseTime.DoesNotExist:
+    return Response({"error": "CourtCloseTime does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+  if request.method == 'GET':
+    serializer = serializers.CourtCloseTimeSerializer(time)
+    return Response(serializer.data)
+  
+  if request.method == 'PUT':
+    serializer = serializers.CourtCloseTimeSerializer(time, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors)
+  
+  if request.method == 'DELETE':
+    time.delete()
+    return Response({"success":True})
+
+
+
 @api_view(['GET','POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -773,10 +816,15 @@ def court_detail_before_book(request, pk):
   except Exception as e:
     pinned = []
 
+  closed_slots = []
   try:
-    closed_slots = generate_time_slots(datetime.strptime(str(court.close_from)[:5], '%H:%M'), datetime.strptime(str(court.close_to)[:5], '%H:%M'), 60)
+    # closed_slots = generate_time_slots(datetime.strptime(str(court.close_from)[:5], '%H:%M'), datetime.strptime(str(court.close_to)[:5], '%H:%M'), 60)
+    slost = models.CourtCloseTime.objects.filter(court=court)
+    for i in slost:
+      closed_slots.append(i.time.strftime('%H:%M'))
   except:
     closed_slots = []
+
  
   settings = models.Setting.objects.get(manager=court.manager)
   
@@ -972,7 +1020,7 @@ def academies_list(request):
 
     if request.GET.get('type'):
       academies = academies.filter(type__pk=request.GET.get('type'))
-
+      
     serializer = serializers.AcademySerializer(academies.order_by('-id'), many=True)
     return Response(serializer.data)
 
@@ -1557,6 +1605,12 @@ def subscriptions_list(request):
     if is_user(request):
       subscribes = models.Subsribe.objects.filter(Q(phone=is_user(request).user.phone) or Q(request_from_profile__pk=is_user(request).pk))
 
+    if request.GET.get('academy_id'):
+      subscribes = subscribes.filter(academy_subscribe_plan__academy__id=request.GET.get('academy_id'))
+      
+    if request.GET.get('trainer_id'):
+      subscribes = subscribes.filter(trainer__id=request.GET.get('trainer_id'))
+      
     if request.GET.get('from_date'):
       subscribes = subscribes.filter(created_at__gte=request.GET.get('from_date'))
 
@@ -1565,7 +1619,6 @@ def subscriptions_list(request):
 
     if request.GET.get('phone'):
       subscribes = subscribes.filter(phone=request.GET.get('phone'))
-    
 
     if request.GET.get('requests_from_profile') == 'False':
       subscribes = subscribes.filter(Q(request_from_profile__isnull=True))
@@ -1671,73 +1724,49 @@ def subscription_renew(request, pk):
 
 
 
+@api_view(['GET', 'POST'])
+def users_list(request):
+  if request.method == 'GET':
+    users = models.CustomUser.objects.all()
+    serializer = serializers.UserSerializer(users, many=True)
+    return Response(serializer.data)
 
 
 
-
-
-
-
-
-
-
-
-from faker import Faker
-from random import choice
-
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def test(request):
-    print(get_time_slots('00:00', '00:00', 60))
-    # num_instances=100
-    # fake = Faker()
+def notifications_list(request):
+  if request.method == 'GET':
+    notifications = models.Notification.objects.filter(user__pk=request.user.pk).order_by('-id')
+    serializer = serializers.NotificationSerializer(notifications, many=True)
+    return Response(serializer.data)
 
-    # # Retrieve existing manager profiles, countries, cities, and states
-    # managers = models.ManagerProfile.objects.all()
-    # countries = models.Country.objects.all()
-    # cities = models.City.objects.all()
-    # states = models.State.objects.all()
-
-    # # Create instances of the Court model
-    # for _ in range(num_instances):
-    #     manager = choice(managers)
-    #     country = choice(countries)
-    #     city = choice(cities.filter(country=country))
-    #     state = choice(states.filter(city=city))
-
-    #     models.Court.objects.create(
-    #         manager=manager,
-    #         name=fake.company(),
-    #         address=fake.address(),
-    #         location_url=fake.url() if choice([True, False]) else None,
-    #         country=country,
-    #         city=city,
-    #         state=state,
-    #         price_per_hour=fake.pydecimal(left_digits=3, right_digits=2, positive=True),
-    #         open_from=fake.time_object(),
-    #         open_to=fake.time_object(),
-    #         close_from=fake.time_object() if choice([True, False]) else None,
-    #         close_to=fake.time_object() if choice([True, False]) else None,
-    #         is_active=True,
-    #         ball_price=fake.pydecimal(left_digits=2, right_digits=2, positive=True) if choice([True, False]) else None,
-    #         has_ball=choice([True, False]),
-    #         offer_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
-    #         offer_time_from=fake.time_object() if choice([True, False]) else None,
-    #         offer_time_to=fake.time_object() if choice([True, False]) else None,
-    #         event_price=fake.pydecimal(left_digits=3, right_digits=2, positive=True) if choice([True, False]) else None,
-    #         event_time_from=fake.time_object() if choice([True, False]) else None,
-    #         event_time_to=fake.time_object() if choice([True, False]) else None
-    #     )
-
-    # print(f"{num_instances} Court instances created successfully.")
-    return Response({"":""})
+  if request.method == 'POST':
+    serializer = serializers.NotificationSerializer(data=request.data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
 
 
 
-
-
-
+@api_view(['PUT'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def notification_detail(request, pk):
+  try:
+    notification = models.Notification.objects.get(pk=pk)
+  except models.Notification.DoesNotExist:
+    return Response({"error": "Notification does not exist"})
+  
+  if request.method == 'PUT':
+    serializer = serializers.NotificationSerializer(notification, data=request.data, partial=True)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors)
+  
 
 
 

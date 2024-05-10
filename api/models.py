@@ -27,7 +27,7 @@ class VerificationCode(models.Model):
   created_at = models.DateTimeField(auto_now_add=True)
 
 class ManagerProfile(models.Model):
-  user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+  user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='manager')
 
   logo = models.ImageField(upload_to='managers/', null=True, blank=True)
   brand_name = models.CharField(max_length=100, null=True)
@@ -148,8 +148,9 @@ class Court(models.Model):
 
   open_from = models.TimeField()
   open_to = models.TimeField()
-  close_from = models.TimeField(null=True, blank=True)
-  close_to = models.TimeField(null=True, blank=True)
+
+  # close_from = models.TimeField(null=True, blank=True)
+  # close_to = models.TimeField(null=True, blank=True)
 
   is_active = models.BooleanField(default=False)
   
@@ -184,8 +185,20 @@ class Court(models.Model):
     super().save()
 
 
+class CourtCloseTime(models.Model):
+  court = models.ForeignKey(Court, on_delete=models.CASCADE, related_name='close_times')
+  time = models.TimeField()
+
+  def save(self, *args, **kwargs):
+    super().save(*args, **kwargs)
+
+  def __str__(self):
+    return str(self.time)
+
+
+
 class CourtImage(models.Model):
-  court = models.ForeignKey(Court, on_delete=models.CASCADE)
+  court = models.ForeignKey(Court, on_delete=models.CASCADE, related_name='images')
   image = models.ImageField(upload_to='images/courts/')
 
   def __str__(self):
@@ -193,7 +206,7 @@ class CourtImage(models.Model):
   
   
 class CourtVideo(models.Model):
-  court = models.ForeignKey(Court, on_delete=models.CASCADE)
+  court = models.ForeignKey(Court, on_delete=models.CASCADE, related_name='videos')
   name = models.CharField(max_length=255)
   url = models.URLField()
 
@@ -202,7 +215,7 @@ class CourtVideo(models.Model):
 
 
 class CourtFeature(models.Model):
-  court = models.ForeignKey(Court, on_delete=models.CASCADE, null=True, blank=True)
+  court = models.ForeignKey(Court, on_delete=models.CASCADE, null=True, blank=True, related_name='features')
   name = models.CharField(max_length=255, null=True, blank=True)
   is_free = models.BooleanField(default=False, null=True, blank=True)
 
@@ -211,7 +224,7 @@ class CourtFeature(models.Model):
 
 
 class CourtTool(models.Model):
-  court = models.ForeignKey(Court, on_delete=models.CASCADE)
+  court = models.ForeignKey(Court, on_delete=models.CASCADE, null=True, blank=True, related_name='tools')
   name = models.CharField(max_length=255)
   price = models.DecimalField(max_digits=10, decimal_places=2)
   
@@ -309,6 +322,14 @@ class Book(models.Model):
 
     super().save()
 
+  def delete(self, *args, **kwargs):
+    expense = Expense.objects.create(
+      manager=self.court.manager,
+      amount=self.total_price,
+      description=f'الغاء حجز ملعب {self.court.name} في {self.date} من {self.start_time} الى {self.end_time} | المستخدم: {self.user.username}',
+    ).save()
+    super().delete(*args, **kwargs)
+
 
 
 class PinnedTime(models.Model):
@@ -349,7 +370,7 @@ class Academy(models.Model):
 
 
 class AcademyTime(models.Model):
-  academy = models.ForeignKey(Academy, on_delete=models.CASCADE)
+  academy = models.ForeignKey(Academy, on_delete=models.CASCADE, related_name='times')
   day_name = models.CharField(max_length=255)
   start_time = models.TimeField(null=True, blank=True)
   end_time = models.TimeField(null=True, blank=True)
@@ -361,7 +382,7 @@ class AcademyTime(models.Model):
 
 
 class AcademySubscribePlan(models.Model):
-  academy = models.ForeignKey(Academy, on_delete=models.CASCADE)
+  academy = models.ForeignKey(Academy, on_delete=models.CASCADE, related_name='plans')
   name = models.CharField(max_length=255)
   price_per_class = models.IntegerField(null=True, blank=True, default=0)
   price_per_week = models.IntegerField(null=True, blank=True, default=0)
@@ -494,41 +515,41 @@ class Subsribe(models.Model):
 
 
   def save(self, *args, **kwargs):
-    # academy
-    if self.request_from_profile and self.academy_subscribe_plan:
-      exist = Income.objects.filter(amount=self.price, description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}").exists()
-      if not exist:
-        income = Income.objects.create(
-          manager=self.academy_subscribe_plan.academy.manager,
-          amount=self.price,
-          description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}",
-        )
-    if not self.request_from_profile and self.academy_subscribe_plan:
-      exist = Income.objects.filter(amount=self.price, description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP").exists()
-      if not exist:
-        income = Income.objects.create(
-          manager=self.academy_subscribe_plan.academy.manager,
-          amount=self.price,
-          description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP",
-        )
+    # # academy
+    # if self.request_from_profile and self.academy_subscribe_plan:
+    #   exist = Income.objects.filter(amount=self.price, description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}").exists()
+    #   if not exist:
+    #     income = Income.objects.create(
+    #       manager=self.academy_subscribe_plan.academy.manager,
+    #       amount=self.price,
+    #       description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}",
+    #     )
+    # if not self.request_from_profile and self.academy_subscribe_plan:
+    #   exist = Income.objects.filter(amount=self.price, description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP").exists()
+    #   if not exist:
+    #     income = Income.objects.create(
+    #       manager=self.academy_subscribe_plan.academy.manager,
+    #       amount=self.price,
+    #       description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP",
+    #     )
     
-    # trainer
-    if self.request_from_profile and self.trainer:
-      exist = Income.objects.filter(amount=self.price, description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
-      if (not exist) or (self.pk and exist):
-        income = Income.objects.create(
-          manager=self.trainer.manager,
-          amount=self.price,
-          description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
-        )
-    if not self.request_from_profile and self.trainer:
-      exist = Income.objects.filter(amount=self.price, description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
-      if (not exist) or (not self.pk and exist):
-        income = Income.objects.create(
-          manager=self.trainer.manager,
-          amount=self.price,
-          description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
-        )
+    # # trainer
+    # if self.request_from_profile and self.trainer:
+    #   exist = Income.objects.filter(amount=self.price, description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
+    #   if (not exist) or (self.pk and exist):
+    #     income = Income.objects.create(
+    #       manager=self.trainer.manager,
+    #       amount=self.price,
+    #       description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
+    #     )
+    # if not self.request_from_profile and self.trainer:
+    #   exist = Income.objects.filter(amount=self.price, description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
+    #   if (not exist) or (not self.pk and exist):
+    #     income = Income.objects.create(
+    #       manager=self.trainer.manager,
+    #       amount=self.price,
+    #       description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
+    #     )
 
     super(Subsribe, self).save(*args, **kwargs)
 
@@ -538,7 +559,18 @@ class Subsribe(models.Model):
 
 
 
+class Notification(models.Model):
+  user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+  description = models.TextField(db_index=True, unique=True)
+  is_read = models.BooleanField(default=False)
+  created_at = models.DateField(auto_now_add=True)
+  updated_at = models.DateField(auto_now=True)
 
+  def save(self, *args, **kwargs):
+    super(Notification, self).save(*args, **kwargs)
+
+  def __str__(self):
+    return str(self.user)
 
 
 

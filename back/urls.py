@@ -31,6 +31,9 @@ urlpatterns = [
 
     path('courts/', views.courts_list),
     path('court/<int:pk>/', views.court_detail),
+    
+    path('court-close-times/<int:court_id>/', views.court_close_times_list),
+    path('court-close-time/<int:pk>/', views.court_close_time_detail),
 
     path('images/<int:court_id>/', views.images_list),
     path('image/<int:pk>/', views.image_detail),
@@ -107,7 +110,10 @@ urlpatterns = [
     path('subscription-renew/<int:pk>/', views.subscription_renew),
 
 
-    path('test/', views.test),
+    path('users/', views.users_list),
 
+
+    path('notifications/', views.notifications_list),
+    path('notifications/<int:pk>/', views.notification_detail),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

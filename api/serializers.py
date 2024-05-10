@@ -2,6 +2,14 @@ from rest_framework import serializers
 from . import models
 from.models import CourtImage, CourtVideo, CourtFeature, CourtTool
 
+
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.Notification
+    fields = '__all__'
+
 class UserSerializer(serializers.ModelSerializer):
   class Meta(object):
     model = models.CustomUser
@@ -35,6 +43,12 @@ class CountrySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CourtCloseTimeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CourtCloseTime
+        fields = '__all__'
+
+
 class CitySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.City
@@ -53,21 +67,14 @@ class CourtTypeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CourtSerializer(serializers.ModelSerializer):
-  country_details = CountrySerializer(source='country', read_only=True)
-  city_details = CitySerializer(source='city', read_only=True)
-  state_details = StateSerializer(source='state', read_only=True)
-  profile_details = ManagerProfileSerializer(source='manager', read_only=True)
-  class Meta:
-    model = models.Court
-    fields = '__all__'
-
 
 
 class CourtImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourtImage
         fields = '__all__'
+
+
 
 class CourtVideoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -83,6 +90,22 @@ class CourtToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourtTool
         fields = '__all__'
+
+class CourtSerializer(serializers.ModelSerializer):
+  country_details = CountrySerializer(source='country', read_only=True)
+  city_details = CitySerializer(source='city', read_only=True)
+  state_details = StateSerializer(source='state', read_only=True)
+  profile_details = ManagerProfileSerializer(source='manager', read_only=True)
+  close_times_details = CourtCloseTimeSerializer(source='close_times', read_only=True, many=True)
+  images_details = CourtImageSerializer(source='images', read_only=True, many=True)
+  video_details = CourtVideoSerializer(source='videos', read_only=True, many=True)
+  features_details = CourtFeatureSerializer(source='features', read_only=True, many=True)
+  tools_details = CourtToolSerializer(source='tools', read_only=True, many=True)
+  class Meta:
+    model = models.Court
+    fields = '__all__'
+
+
 
 class BookSerializer(serializers.ModelSerializer):
   court_details = CourtSerializer(source='court', read_only=True)
@@ -174,11 +197,11 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 
 
-
-
 class SubsribeSerializer(serializers.ModelSerializer):
   academy_subscribe_plan_details = AcademySubscribePlanSerializer(source='academy_subscribe_plan', read_only=True)
   trainer_details = TrainerSerializer(source='trainer', read_only=True)
+  manager_details = ManagerProfileSerializer(source='manager', read_only=True)
+  
   class Meta:
     model = models.Subsribe
     fields = '__all__'
