@@ -359,6 +359,11 @@ class Academy(models.Model):
   image = models.ImageField(upload_to='academies/', null=True, blank=True)
   name = models.CharField(max_length=255)
   type = models.ForeignKey(AcademyType, on_delete=models.CASCADE)
+
+  country = models.ForeignKey(Country, on_delete=models.CASCADE, null=True)
+  city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
+  state = models.ForeignKey(State, on_delete=models.CASCADE, null=True)
+
   location = models.CharField(max_length=255)
   location_url = models.CharField(max_length=255, null=True, blank=True)
   website = models.CharField(max_length=255, null=True, blank=True)

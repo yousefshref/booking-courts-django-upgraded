@@ -4,8 +4,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from bs4 import BeautifulSoup
-import requests
 
 from django.shortcuts import get_object_or_404
 from rest_framework.authtoken.models import Token
@@ -56,26 +54,34 @@ def send_email(receiver_email, subject, message_body):
   return True
 
 
+import requests
 
 def verification_wahtsapp(phone_number):
 
-  phone = phone_number
+  phone = f"2{phone_number}"
 
   verification = ''.join(str(random.randint(0, 9)) for _ in range(6))
 
   models.VerificationCode.objects.create(
-      phone=phone,
+      phone=phone_number,
       code=verification,
   )
 
-  # http://198.204.228.117:8000/send_whatsapp_message/
-  # requests.post('http://198.204.228.117:8000/send_whatsapp_message/?phone=${phone}&message=الكود هو ${verification} لا تشاركه مع احد', data={})
-  
-  
-  requests.post('http://198.204.228.117:8000/send_whatsapp_message/', data={
-    "phone": phone,
-    "message": f"الكود هو {verification} لا تشاركه مع احد"
-  })
+
+  url = "https://api.ultramsg.com/instance86763/messages/chat"
+  msg = f"الكود هو {verification} لا تشاركه مع احد"
+  payload = {
+    "token": "yt5217kmvv4g5xf5",
+    "to": phone,
+    "body": msg
+  }
+  headers = {
+    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+  }
+  response = requests.post(url, data=payload, headers=headers)
+
+  print(response.text)
+
   
 
   return Response({"success":True})
@@ -138,7 +144,8 @@ def signup(request):
   serializer = serializers.UserSerializer(data=data)
   if serializer.is_valid():
     verificatio_code = models.VerificationCode.objects.filter(phone=request.data['phone']).last()
-    
+
+    print(verificatio_code.code)
 
     if(str(data['phone']) == str(verificatio_code.phone) and str(data['verification']) == str(verificatio_code.code)):
       serializer.save() 
@@ -1020,6 +1027,15 @@ def academies_list(request):
 
     if request.GET.get('type'):
       academies = academies.filter(type__pk=request.GET.get('type'))
+
+    if request.GET.get('country'):
+      academies = academies.filter(country__pk=request.GET.get('country'))
+    
+    if request.GET.get('city'):
+      academies = academies.filter(city__pk=request.GET.get('city'))
+
+    if request.GET.get('state'):
+      academies = academies.filter(state__pk=request.GET.get('state'))
       
     serializer = serializers.AcademySerializer(academies.order_by('-id'), many=True)
     return Response(serializer.data)
