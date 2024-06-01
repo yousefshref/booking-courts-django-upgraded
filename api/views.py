@@ -80,9 +80,6 @@ def verification_wahtsapp(phone_number):
   }
   response = requests.post(url, data=payload, headers=headers)
 
-  print(response.text)
-
-  
 
   return Response({"success":True})
 
@@ -103,11 +100,20 @@ def send_whatsapp_message(request):
       phone=phone,  
       code=verification,
   )
-  
-  requests.post('http://198.204.228.117:8000/send_whatsapp_message/', data={
-    "phone": phone,
-    "message": f"الكود هو {verification} لا تشاركه مع احد"
-  })
+
+
+  url = "https://api.ultramsg.com/instance86763/messages/chat"
+  msg = f"الكود هو {verification} لا تشاركه مع احد"
+  payload = {
+    "token": "yt5217kmvv4g5xf5",
+    "to": phone,
+    "body": msg
+  }
+  headers = {
+    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+  }
+  response = requests.post(url, data=payload, headers=headers)
+
   
 
   return Response({"success":True})
@@ -115,10 +121,18 @@ def send_whatsapp_message(request):
 
 def send_whatsapp_message_function(phone, message):
   
-  requests.post('http://198.204.228.117:8000/send_whatsapp_message/', data={
-    "phone": f"{phone}",
-    "message": f"{message}"
-  })
+  url = "https://api.ultramsg.com/instance86763/messages/chat"
+
+  payload = {
+    "token": "yt5217kmvv4g5xf5",
+    "to": f"2{phone}",
+    "body": message
+  }
+  headers = {
+    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+  }
+  response = requests.post(url, data=payload, headers=headers)
+
   
 
   return Response({"success":True})
@@ -145,7 +159,6 @@ def signup(request):
   if serializer.is_valid():
     verificatio_code = models.VerificationCode.objects.filter(phone=request.data['phone']).last()
 
-    print(verificatio_code.code)
 
     if(str(data['phone']) == str(verificatio_code.phone) and str(data['verification']) == str(verificatio_code.code)):
       serializer.save() 
@@ -172,6 +185,48 @@ def login(request):
 
   serializer = serializers.UserSerializer(user)
   return Response({'token': token.key, 'user': serializer.data})
+
+
+
+@api_view(['POST', 'PUT'])
+def forgot_password(request):
+  if request.method == 'POST':
+    try:
+      user = models.CustomUser.objects.get(
+        Q(phone=request.data['phone'])
+      )
+
+      verification = ''.join(str(random.randint(0, 9)) for _ in range(6))
+
+      models.VerificationCode.objects.create(
+          phone=user.phone,  
+          code=verification,
+      )
+
+      send_whatsapp_message_function(user.phone, f"الكود هو {verification} لا تشاركه مع احد")
+
+
+      return Response({"success":True})
+    
+    except models.CustomUser.DoesNotExist:
+      return Response({"error": "User does not exist"})
+    
+
+  if request.method == 'PUT':
+    verification_code = request.data.get('code')
+    received_code = models.VerificationCode.objects.filter(phone=request.data['phone']).last()
+
+    if(str(verification_code) == str(received_code.code)):
+      user = models.CustomUser.objects.get(
+        Q(phone=request.data['phone'])
+      )
+      user.set_password(request.data['password'])
+      user.save()
+      return Response({"success":True})
+
+    return Response({"error": "Verification code does not match"})
+
+    
 
 
 
@@ -688,7 +743,6 @@ def staff_user_update(request, pk):
   if request.method == 'PUT':
     code_insance = models.VerificationCode.objects.filter(is_used=False, phone=request.data['phone']).last()
     user_instance = models.CustomUser.objects.get(pk=pk)
-    print(code_insance.code)
     serializer = serializers.UserSerializer(user_instance, data=request.data, partial=True)
     if serializer.is_valid():
       if code_insance.code == request.data['code']:
@@ -913,13 +967,10 @@ def book_detail(request, pk):
       can_cancel = False
       # get the created date
       created_date = localtime(book.created_at)
-      print(created_date)
       # get the limit date
       limit = created_date + timedelta(minutes=settings_ser.data['limit_of_canceling_in_minuts'])
-      print(limit)
       # get the current date
       current = localtime()
-      print(current)
       # if current < limit -> can be cancelled
       if current < limit:
         can_cancel = True

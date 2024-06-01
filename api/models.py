@@ -294,20 +294,6 @@ class Book(models.Model):
 
 
   def save(self, *args, **kwargs):
-    if self.pk is None and self.is_paied:
-      income = Income.objects.create(
-        manager=self.court.manager,
-        amount=self.total_price,
-        description=f'حجز ملعب {self.court.name} في {self.date} من {self.start_time} الى {self.end_time} | بواسطة {self.user.username}',
-      ).save()
-
-    if self.pk is None and not self.is_paied:
-      expense = Expense.objects.create(
-        manager=self.court.manager,
-        amount=self.total_price,
-        description=f'الغاء حجز ملعب {self.court.name} في {self.date} من {self.start_time} الى {self.end_time} | المستخدم: {self.user.username}',
-      ).save()
-
     super().save(*args, **kwargs)
 
     if self.pinned_to:
@@ -520,42 +506,6 @@ class Subsribe(models.Model):
 
 
   def save(self, *args, **kwargs):
-    # # academy
-    # if self.request_from_profile and self.academy_subscribe_plan:
-    #   exist = Income.objects.filter(amount=self.price, description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}").exists()
-    #   if not exist:
-    #     income = Income.objects.create(
-    #       manager=self.academy_subscribe_plan.academy.manager,
-    #       amount=self.price,
-    #       description=f"اشتراك في {self.academy_subscribe_plan.academy.name} من {self.start_from} حتي {self.end_to} تم الانشاء في {self.created_at} | الاسم: {self.name} | الجنس: {self.gender} | الهاتف: {self.phone}",
-    #     )
-    # if not self.request_from_profile and self.academy_subscribe_plan:
-    #   exist = Income.objects.filter(amount=self.price, description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP").exists()
-    #   if not exist:
-    #     income = Income.objects.create(
-    #       manager=self.academy_subscribe_plan.academy.manager,
-    #       amount=self.price,
-    #       description=f"طلب اشتراك في {self.academy_subscribe_plan.academy.name} من {self.name} ورقم الهاتف {self.phone} | بسعر: {self.price} EGP",
-    #     )
-    
-    # # trainer
-    # if self.request_from_profile and self.trainer:
-    #   exist = Income.objects.filter(amount=self.price, description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
-    #   if (not exist) or (self.pk and exist):
-    #     income = Income.objects.create(
-    #       manager=self.trainer.manager,
-    #       amount=self.price,
-    #       description=f'اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
-    #     )
-    # if not self.request_from_profile and self.trainer:
-    #   exist = Income.objects.filter(amount=self.price, description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}').exists()
-    #   if (not exist) or (not self.pk and exist):
-    #     income = Income.objects.create(
-    #       manager=self.trainer.manager,
-    #       amount=self.price,
-    #       description=f'طلب اشتراك مع المدرب {self.trainer.trainer} من {self.name} ورقم الهاتف {self.phone}',
-    #     )
-
     super(Subsribe, self).save(*args, **kwargs)
 
   

@@ -14,6 +14,7 @@ urlpatterns = [
     path('signup-verification/', views.signup_send_verification),
     path('signup/', views.signup),
     path('login/', views.login),
+    path('password-reset/', views.forgot_password),
     
 
     path('user/', views.user_detail),
