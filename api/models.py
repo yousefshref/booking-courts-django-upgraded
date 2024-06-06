@@ -350,6 +350,8 @@ class Academy(models.Model):
   city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
   state = models.ForeignKey(State, on_delete=models.CASCADE, null=True)
 
+  is_active = models.BooleanField(default=False)
+
   location = models.CharField(max_length=255)
   location_url = models.CharField(max_length=255, null=True, blank=True)
   website = models.CharField(max_length=255, null=True, blank=True)
@@ -358,6 +360,12 @@ class Academy(models.Model):
 
   def __str__(self):
     return self.name
+  
+
+  def save(self, *args, **kwargs):
+    if self.manager.is_verified:
+      self.is_active = True
+    super().save(*args, **kwargs)
 
 
 class AcademyTime(models.Model):

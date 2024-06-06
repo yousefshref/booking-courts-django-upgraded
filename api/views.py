@@ -1065,7 +1065,7 @@ def academies_types(request):
 @permission_classes([IsAuthenticated])
 def academies_list(request):
   if request.method == 'GET':
-    academies = models.Academy.objects.all()
+    academies = models.Academy.objects.filter(is_active=True)
 
     if is_manager(request):
       academies = models.Academy.objects.filter(manager=is_manager(request))
@@ -1780,8 +1780,8 @@ def subscription_renew(request, pk):
     mother_phone = subscribe.mother_phone,
     father_phone = subscribe.father_phone,
     price = subscribe.price,
-    start_from = subscribe.start_from,
-    end_to = subscribe.end_to,
+    start_from = datetime.today().date(),
+    end_to = datetime.today().date() + timedelta(days=30),
     request_from_profile = subscribe.request_from_profile,
     is_approved=subscribe.is_approved
   )
