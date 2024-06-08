@@ -10,17 +10,23 @@ class NotificationSerializer(serializers.ModelSerializer):
     model = models.Notification
     fields = '__all__'
 
+class ManagerProfileSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.ManagerProfile
+    fields = '__all__'
+
 class UserSerializer(serializers.ModelSerializer):
+  manager_details = ManagerProfileSerializer(source='manager', required=False)
   class Meta(object):
     model = models.CustomUser
     fields = '__all__'
 
 
 class ManagerProfileSerializer(serializers.ModelSerializer):
-    user_details = UserSerializer(source='user', read_only=True)
-    class Meta:
-        model = models.ManagerProfile
-        fields = '__all__'
+  user_details = UserSerializer(source='user', read_only=True)
+  class Meta:
+    model = models.ManagerProfile
+    fields = '__all__'
 
 class StaffProfileSerializer(serializers.ModelSerializer):
   user_details = UserSerializer(source='user', read_only=True)
@@ -29,10 +35,10 @@ class StaffProfileSerializer(serializers.ModelSerializer):
     fields = '__all__'
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    user_details = UserSerializer(source='user', read_only=True)
-    class Meta:
-        model = models.UserProfile
-        fields = '__all__'
+  user_details = UserSerializer(source='user', read_only=True)
+  class Meta:
+    model = models.UserProfile
+    fields = '__all__'
 
 
 

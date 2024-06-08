@@ -1208,6 +1208,9 @@ def academy_trainers_list(request):
     
     if request.GET.get('type_id'):
       academy_trainers = academy_trainers.filter(type__id=request.GET.get('type_id'))
+
+    if request.GET.get('manager'):
+      academy_trainers = academy_trainers.filter(manager__id=request.GET.get('manager'))
     
     if request.GET.get('price_from') and request.GET.get('price_to'):
       price_from = int(request.GET.get('price_from'))
