@@ -1704,27 +1704,7 @@ def subscriptions_list(request):
     return Response(serializer.data)
 
   if request.method == 'POST':
-    data = request.data.copy()
-
-    if is_manager(request):
-      data['manager'] = is_manager(request).pk
-
-    if is_staff(request):
-      data['manager'] = is_staff(request).manager.pk
-
-    if is_user(request):
-      try:
-        manager = models.AcademySubscribePlan.objects.get(pk=data['academy_subscribe_plan']).academy.manager
-      except:
-        pass
-      try:
-        manager = models.Trainer.objects.get(pk=data['trainer']).manager
-      except:
-        pass
-      data['manager'] = manager.pk
-      data['request_from_profile'] = is_user(request).pk
-
-    serializer = serializers.SubsribeSerializer(data=data)
+    serializer = serializers.SubsribeSerializer(data=request.data)
     if serializer.is_valid():
       serializer.save()
       return Response(serializer.data)

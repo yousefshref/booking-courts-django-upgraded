@@ -15,8 +15,15 @@ class ManagerProfileSerializer(serializers.ModelSerializer):
     model = models.ManagerProfile
     fields = '__all__'
 
+
+class UserProfileSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.UserProfile
+    fields = '__all__'
+
 class UserSerializer(serializers.ModelSerializer):
   manager_details = ManagerProfileSerializer(source='manager', required=False)
+  user_details = UserProfileSerializer(source='user', required=False)
   class Meta(object):
     model = models.CustomUser
     fields = '__all__'
@@ -204,10 +211,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 
 class SubsribeSerializer(serializers.ModelSerializer):
-  academy_subscribe_plan_details = AcademySubscribePlanSerializer(source='academy_subscribe_plan', read_only=True)
   trainer_details = TrainerSerializer(source='trainer', read_only=True)
-  manager_details = ManagerProfileSerializer(source='manager', read_only=True)
-  
+  academy_subscribe_plan_details = AcademySubscribePlanSerializer(source='academy_subscribe_plan', read_only=True)
   class Meta:
     model = models.Subsribe
     fields = '__all__'

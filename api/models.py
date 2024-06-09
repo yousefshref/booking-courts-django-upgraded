@@ -73,7 +73,7 @@ class Setting(models.Model):
 
 
 class UserProfile(models.Model):
-  user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+  user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='user')
   profile_image = models.ImageField(upload_to='users/', null=True, default='', blank=True)
   bio = models.TextField(null=True, blank=True)
   
