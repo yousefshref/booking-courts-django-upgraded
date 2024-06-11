@@ -308,14 +308,6 @@ class Book(models.Model):
 
     super().save()
 
-  def delete(self, *args, **kwargs):
-    expense = Expense.objects.create(
-      manager=self.court.manager,
-      amount=self.total_price,
-      description=f'الغاء حجز ملعب {self.court.name} في {self.date} من {self.start_time} الى {self.end_time} | المستخدم: {self.user.username}',
-    ).save()
-    super().delete(*args, **kwargs)
-
 
 
 class PinnedTime(models.Model):
@@ -380,21 +372,6 @@ class AcademyTime(models.Model):
 
 
 
-class AcademySubscribePlan(models.Model):
-  academy = models.ForeignKey(Academy, on_delete=models.CASCADE, related_name='plans')
-  name = models.CharField(max_length=255)
-  price_per_class = models.IntegerField(null=True, blank=True, default=0)
-  price_per_week = models.IntegerField(null=True, blank=True, default=0)
-  price_per_month = models.IntegerField(null=True, blank=True, default=0)
-  price_per_year = models.IntegerField(null=True, blank=True, default=0)
-  description = models.TextField(null=True, blank=True, max_length=255)
-  created_at = models.DateTimeField(auto_now_add=True)
-  updated_at = models.DateTimeField(auto_now=True)
-
-  def __str__(self):
-    return str(self.academy.name)+" - "+ str(self.name)
-
-
 
 class Trainer(models.Model):
   manager = models.ForeignKey(ManagerProfile, on_delete=models.CASCADE, null=True)
@@ -416,6 +393,23 @@ class Trainer(models.Model):
   def __str__(self):
     return str(self.type.name)+" - "+ str(self.trainer)
 
+
+
+
+class AcademySubscribePlan(models.Model):
+  academy = models.ForeignKey(Academy, on_delete=models.CASCADE, related_name='plans')
+  trainer = models.ForeignKey(Trainer, on_delete=models.CASCADE, null=True, blank=True, related_name='plans_trainer')
+  name = models.CharField(max_length=255)
+  price_per_class = models.IntegerField(null=True, blank=True, default=0)
+  price_per_week = models.IntegerField(null=True, blank=True, default=0)
+  price_per_month = models.IntegerField(null=True, blank=True, default=0)
+  price_per_year = models.IntegerField(null=True, blank=True, default=0)
+  description = models.TextField(null=True, blank=True, max_length=255)
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
+
+  def __str__(self):
+    return str(self.academy.name)+" - "+ str(self.name)
 
 
 class WhiteList(models.Model):

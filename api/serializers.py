@@ -186,6 +186,7 @@ class TrainerSerializer(serializers.ModelSerializer):
 
 class AcademySubscribePlanSerializer(serializers.ModelSerializer):
   academy_details = AcademySerializer(source='academy', read_only=True)
+  trainer_details = TrainerSerializer(source='plans_trainer', read_only=True)
   class Meta:
     model = models.AcademySubscribePlan
     fields = '__all__'
@@ -209,8 +210,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 
 
-
 class SubsribeSerializer(serializers.ModelSerializer):
+  manager_details = ManagerProfileSerializer(source='manager', read_only=True)
   trainer_details = TrainerSerializer(source='trainer', read_only=True)
   academy_subscribe_plan_details = AcademySubscribePlanSerializer(source='academy_subscribe_plan', read_only=True)
   class Meta:
