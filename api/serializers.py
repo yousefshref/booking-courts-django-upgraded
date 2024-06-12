@@ -208,12 +208,23 @@ class ExpenseSerializer(serializers.ModelSerializer):
     fields = '__all__'
 
 
+class SubsribeSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.Subsribe
+    fields = '__all__'
 
+
+class SubscriptionRenewalSerializer(serializers.ModelSerializer):
+  subscribe_details = SubsribeSerializer(source='subsribe', read_only=True)
+  class Meta:
+    model = models.SubscriptionRenewal
+    fields = '__all__'
 
 class SubsribeSerializer(serializers.ModelSerializer):
   manager_details = ManagerProfileSerializer(source='manager', read_only=True)
   trainer_details = TrainerSerializer(source='trainer', read_only=True)
   academy_subscribe_plan_details = AcademySubscribePlanSerializer(source='academy_subscribe_plan', read_only=True)
+  renewal_details = SubscriptionRenewalSerializer(source='renewal', read_only=True, many=True)
   class Meta:
     model = models.Subsribe
     fields = '__all__'

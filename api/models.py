@@ -513,6 +513,18 @@ class Subsribe(models.Model):
   
 
 
+class SubscriptionRenewal(models.Model):
+  subsribe = models.ForeignKey(Subsribe, on_delete=models.CASCADE, related_name='renewal')
+
+  price = models.IntegerField(null=True)
+  start_from = models.DateField(null=True, blank=True)
+  end_to = models.DateField(null=True, blank=True)
+
+  created_at = models.DateField(auto_now_add=True)
+  updated_at = models.DateField(auto_now=True)
+
+  def __str__(self):
+    return str(self.subsribe) + ' - ' + str(self.id)
 
 
 

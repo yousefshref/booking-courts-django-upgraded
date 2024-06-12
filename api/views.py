@@ -1739,37 +1739,26 @@ def subscription_detail(request, pk):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def subscriptions_details(request, pk):
+  subscribe = models.SubscriptionRenewal.objects.filter(subsribe__pk=pk)
+  serializer = serializers.SubscriptionRenewalSerializer(subscribe.order_by('-id'), many=True)
+  return Response(serializer.data)
+
+
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def subscription_renew(request, pk):
-  subscribe = models.Subsribe.objects.get(pk=pk)
-
-  new_subscribe = models.Subsribe.objects.create(
-    manager = subscribe.manager,
-    academy_subscribe_plan = subscribe.academy_subscribe_plan,
-    trainer = subscribe.trainer,
-    player_image = subscribe.player_image,
-    birth_cirtificate = subscribe.birth_cirtificate,
-    national_id_image1 = subscribe.national_id_image1,
-    national_id_image2 = subscribe.national_id_image2,
-    national_id_parent1 = subscribe.national_id_parent1,
-    national_id_parent2 = subscribe.national_id_parent2,
-    passport_image = subscribe.passport_image,
-    name = subscribe.name,
-    phone = subscribe.phone,
-    birth_date = subscribe.birth_date,
-    gender = subscribe.gender,
-    mother_phone = subscribe.mother_phone,
-    father_phone = subscribe.father_phone,
-    price = subscribe.price,
-    start_from = datetime.today().date(),
-    end_to = datetime.today().date() + timedelta(days=30),
-    request_from_profile = subscribe.request_from_profile,
-    is_approved=subscribe.is_approved
-  )
-
-  return Response(serializers.SubsribeSerializer(new_subscribe).data)
+  data = request.data.copy()
+  serializer = serializers.SubscriptionRenewalSerializer(data=data, partial=True)
+  if serializer.is_valid():
+    serializer.save()
+    return Response(serializer.data)
+  return Response(serializer.errors)
   
 
 
