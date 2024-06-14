@@ -1700,6 +1700,14 @@ def subscriptions_list(request):
       subscribes = subscribes.filter(Q(is_approved=request.GET.get('is_approved')))
 
 
+    if request.GET.get('only_trainers'):
+      subscribes = subscribes.filter(academy_subscribe_plan__isnull=True)
+
+    if request.GET.get('only_academies'):
+      subscribes = subscribes.filter(trainer__isnull=True)
+      
+
+
     serializer = serializers.SubsribeSerializer(subscribes.order_by('-id'), many=True)
     return Response(serializer.data)
 
